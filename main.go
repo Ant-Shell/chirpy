@@ -8,15 +8,20 @@ import (
 
 
 func main() {
+	const filepathRoot = "."
+	const port = "8080"
+
+	fs := http.FileServer(http.Dir(filepathRoot))
 	mux := http.NewServeMux()
+	mux.Handle("/", fs)
 
 	server := &http.Server{
-		Addr: ":8080",
+		Addr: ":" + port,
 		Handler: mux,
 	}
-
-	fmt.Println("Starting server on :8080")
+	
+	fmt.Printf("Serving files from %s on port %s\n", filepathRoot, port)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("Could not listen on :8080: %v\n", err)
+		log.Fatalf("Could not listen on :%s: %v\n", port, err)
 	}
 }
