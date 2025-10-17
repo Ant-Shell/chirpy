@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"unicode/utf8"
 	"net/http"
+	"strings"
+	"slices"
 )
 
 func handlerValidate(w http.ResponseWriter, r *http.Request){
@@ -16,7 +18,7 @@ func handlerValidate(w http.ResponseWriter, r *http.Request){
 		}
 
 		type returnVal struct {
-				Valid bool `json:"valid"`
+				Cleaned_Body string `json:"cleaned_body"`
 		}
 
     decoder := json.NewDecoder(r.Body)
@@ -44,9 +46,22 @@ func handlerValidate(w http.ResponseWriter, r *http.Request){
 			return
 		}
 
-		returnBody := returnVal{
-			Valid: true,
+		badWords := []string{"kerfuffle", "sharbert", "fornax"}
+		body := strings.Split(params.Body, " ")
+		cleaned_body := []string{}
+
+		for i := range body {
+			if slices.Contains(badWords, strings.ToLower(body[i])) {
+				cleaned_body = append(cleaned_body, "****")
+			} else {
+				cleaned_body = append(cleaned_body, body[i])
+			}
 		}
+
+		returnBody := returnVal{
+			Cleaned_Body: strings.Join(cleaned_body, " "),
+		}
+
 		res, _ := json.Marshal(returnBody)
 		w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
