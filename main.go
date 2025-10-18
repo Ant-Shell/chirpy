@@ -1,22 +1,37 @@
 package main
 
 import (
-	"fmt"
+	"database/sql"
 	"log"
 	"net/http"
+	"os"
 	"sync/atomic"
+
+	"github.com/Ant-Shell/chirpy/internal/database"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
+	dbQueries *database.Queries
 }
 
 func main() {
+	godotenv.Load()
+	dbURL := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("Could not connect to the DB")
+	}
+	dbQueries := database.New(db)
+
 	const filepathRoot = "."
 	const port = "8080"
 
 	apiCfg := &apiConfig{
 		fileserverHits: atomic.Int32{},
+		dbQueries: dbQueries,
 	}
 
 	mux := http.NewServeMux()
@@ -30,8 +45,8 @@ func main() {
 		Addr: ":" + port,
 		Handler: mux,
 	}
-	
-	fmt.Printf("Serving files from %s on port %s\n", filepathRoot, port)
+
+	log.Printf("Serving on port: %s\n", port)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Could not listen on :%s: %v\n", port, err)
 	}
