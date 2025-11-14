@@ -8,7 +8,7 @@ import (
 	"github.com/Ant-Shell/chirpy/internal/auth"
 )
 
-func (cfg *apiConfig) handleLogin (w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 			Email string `json:"email"`
 			Password string `json:"password"`
