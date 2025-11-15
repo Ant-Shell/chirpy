@@ -1,12 +1,19 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+)
+
+type TokenType string
+
+const (
+	TokenTypeAccess TokenType = "chirpy-access"
 )
 
 func HashPassword(password string) (string, error) {
@@ -26,37 +33,45 @@ func CheckPasswordHash(password, hash string) (bool, error) {
 }
 
 func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
+	signingKey := []byte(tokenSecret)
 	claims := &jwt.RegisteredClaims{
-		Issuer: "chirpy",
+		Issuer: string(TokenTypeAccess),
 		IssuedAt: jwt.NewNumericDate(time.Now().UTC()),
 		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
 		Subject: userID.String(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err:= token.SignedString([]byte(tokenSecret))
-	if err != nil {
-		return "", err
-	}
-	return signed, nil
+	return token.SignedString(signingKey)
 }
 
 func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
-	claims := &jwt.RegisteredClaims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (any, error) {
+	claims := jwt.RegisteredClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, &claims, func(t *jwt.Token) (any, error) {
 		if t.Method != jwt.SigningMethodHS256 {
-			return nil, fmt.Errorf("unexpected signing method")
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 		return []byte(tokenSecret), nil
 	})
 	if err != nil || token == nil || !token.Valid {
-		return uuid.UUID{}, fmt.Errorf("invalid token: %w", err)
+		return uuid.Nil, fmt.Errorf("invalid token: %w", err)
 	}
 
-	id, err := uuid.Parse(claims.Subject)
+	issuer, err := token.Claims.GetIssuer()
 	if err != nil {
-		return uuid.UUID{}, err
+		return uuid.Nil, err
+	}
+	if issuer != string(TokenTypeAccess) {
+		return uuid.Nil, errors.New("invalid issuer")
 	}
 
+	sub, err := token.Claims.GetSubject()
+	if err != nil {
+		return uuid.Nil, err
+	}
+	id, err := uuid.Parse(sub)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("invalid user ID: %w", err)
+	}
 	return id, nil
 }
