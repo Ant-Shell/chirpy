@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Ant-Shell/chirpy/internal/auth"
 )
@@ -12,6 +13,7 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 			Email string `json:"email"`
 			Password string `json:"password"`
+			ExpiresInSeconds *int64 `json:"expires_in_seconds"`
 	}
 
 	var p parameters
@@ -21,6 +23,7 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	p.Email = strings.TrimSpace(p.Email)
 	p.Password = strings.TrimSpace(p.Password)
+
 	if p.Email == "" {
 		respondWithError(w, http.StatusBadRequest, "email is required", nil)
 		return
@@ -31,9 +34,20 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	max := int64(3600)
+	exp := max
+	if p.ExpiresInSeconds != nil {
+		v := min(*p.ExpiresInSeconds, max)
+		if v < 1 {
+			v = 1
+		}
+		exp = v
+	}
+
 	dbUser, err := cfg.db.GetUserByEmail(r.Context(), p.Email)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "incorrect email or password", nil)
+		return
 	}
 
 	ok, err := auth.CheckPasswordHash(p.Password, dbUser.HashedPassword)
@@ -42,11 +56,18 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := User{
+	token, err := auth.MakeJWT(dbUser.ID, cfg.jwtSecret, time.Duration(exp)*time.Second)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "failed to create token.", nil)
+		return
+	}
+
+	user := loginResponse{
 		ID: dbUser.ID,
 		Email: dbUser.Email,
 		CreatedAt: dbUser.CreatedAt,
 		UpdatedAt: dbUser.UpdatedAt,
+		Token: token,
 	}
 
 	respondWithJSON(w, http.StatusOK, user)
