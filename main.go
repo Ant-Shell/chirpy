@@ -18,6 +18,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db *database.Queries
 	platform string
+	jwtSecret string
 }
 
 type User struct {
@@ -33,6 +34,14 @@ type Chirp struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	UserID uuid.UUID `json:"user_id"`
+}
+
+type loginResponse struct {
+	ID        uuid.UUID `json:"id"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Token string `json:"token"`
 }
 
 func main() {
@@ -51,12 +60,14 @@ func main() {
 	}
 	dbQueries := database.New(dbConn)
 	dbPlatform := os.Getenv("PLATFORM")
+	jwtSecret := os.Getenv("SECRET")
 
 
 	cfg := &apiConfig{
 		fileserverHits: atomic.Int32{},
 		db: dbQueries,
 		platform: dbPlatform,
+		jwtSecret: jwtSecret,
 	}
 
 	mux := http.NewServeMux()
