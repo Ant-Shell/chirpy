@@ -5,21 +5,30 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Ant-Shell/chirpy/internal/auth"
 	"github.com/Ant-Shell/chirpy/internal/database"
-	"github.com/google/uuid"
 )
 
 func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request){
 	type parameters struct {
 			Body string `json:"body"`
-			UserID uuid.UUID `json:"user_id"`
 	}
 
-	decoder := json.NewDecoder(r.Body)
-	params := parameters{}
-	err := decoder.Decode(&params)
+	var params parameters
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid JSON", err)
+		return
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
+		respondWithError(w, http.StatusUnauthorized, "Missing or malformed Authorization header", err)
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid or expired token", err)
 		return
 	}
 
@@ -35,19 +44,15 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	badWords := map[string]struct{}{
-		"kerfuffle": {},
-		"sharbert": {},
-		"fornax": {},
-	}
+	badWords := map[string]struct{}{"kerfuffle": {}, "sharbert": {}, "fornax": {}}
 	cleaned := getCleanedBody(params.Body, badWords)
 
 	dbChirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body: cleaned,
-		UserID: params.UserID,
+		UserID: userID,
 	})
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not create chirp", err)
+		respondWithError(w, http.StatusInternalServerError, "Could not create chirp", err)
 		return
 	}
 
