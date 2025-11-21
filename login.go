@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/Ant-Shell/chirpy/internal/auth"
+	"github.com/Ant-Shell/chirpy/internal/database"
 )
 
-func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 			Email string `json:"email"`
 			Password string `json:"password"`
-			ExpiresInSeconds *int64 `json:"expires_in_seconds"`
 	}
 
 	var p parameters
@@ -34,16 +34,6 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	max := int64(3600)
-	exp := max
-	if p.ExpiresInSeconds != nil {
-		v := min(*p.ExpiresInSeconds, max)
-		if v < 1 {
-			v = 1
-		}
-		exp = v
-	}
-
 	dbUser, err := cfg.db.GetUserByEmail(r.Context(), p.Email)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "incorrect email or password", nil)
@@ -56,11 +46,29 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := auth.MakeJWT(dbUser.ID, cfg.jwtSecret, time.Duration(exp)*time.Second)
+	token, err := auth.MakeJWT(dbUser.ID, cfg.jwtSecret, time.Hour)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "failed to create token.", nil)
 		return
 	}
+
+	refreshToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "failed to create refresh token.", nil)
+		return
+	}
+
+	expiresAt := time.Now().Add(60 * 24 * time.Hour)
+
+	_, err = cfg.db.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+		Token: refreshToken,
+		UserID: dbUser.ID,
+		ExpiresAt: expiresAt,
+	})
+	if err != nil {
+    respondWithError(w, http.StatusInternalServerError, "failed to store refresh token", err)
+    return
+}
 
 	user := loginResponse{
 		ID: dbUser.ID,
@@ -68,6 +76,7 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: dbUser.CreatedAt,
 		UpdatedAt: dbUser.UpdatedAt,
 		Token: token,
+		RefreshToken: refreshToken,
 	}
 
 	respondWithJSON(w, http.StatusOK, user)
