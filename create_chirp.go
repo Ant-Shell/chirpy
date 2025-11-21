@@ -16,31 +16,31 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 
 	var params parameters
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid JSON", err)
+		respondWithError(w, http.StatusBadRequest, "invalid JSON", err)
 		return
 	}
 
 	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Missing or malformed Authorization header", err)
+		respondWithError(w, http.StatusUnauthorized, "missing or malformed Authorization header", err)
 		return
 	}
 
 	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Invalid or expired token", err)
+		respondWithError(w, http.StatusUnauthorized, "invalid or expired token", err)
 		return
 	}
 
 	const maxChirpLength = 140
 	body := strings.TrimSpace(params.Body)
 	if body == "" {
-		respondWithError(w, http.StatusBadRequest, "Body is required", nil)
+		respondWithError(w, http.StatusBadRequest, "body is required", nil)
 		return
 	}
 
 	if len(body) > maxChirpLength {
-		respondWithError(w, http.StatusBadRequest, "Chirp is too long", nil)
+		respondWithError(w, http.StatusBadRequest, "chirp is too long", nil)
 		return
 	}
 
@@ -52,7 +52,7 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 		UserID: userID,
 	})
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Could not create chirp", err)
+		respondWithError(w, http.StatusInternalServerError, "could not create chirp", err)
 		return
 	}
 
