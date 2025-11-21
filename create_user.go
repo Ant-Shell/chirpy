@@ -47,7 +47,7 @@ func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user := User{
+		user := userResponse{
 		ID: dbUser.ID,
 		Email: dbUser.Email,
 		CreatedAt: dbUser.CreatedAt,
