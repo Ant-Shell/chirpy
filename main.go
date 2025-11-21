@@ -45,6 +45,13 @@ type loginResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+type userResponse struct {
+    ID        uuid.UUID `json:"id"`
+    CreatedAt time.Time `json:"created_at"`
+    UpdatedAt time.Time `json:"updated_at"`
+    Email     string    `json:"email"`
+}
+
 func main() {
 	const filepathRoot = "."
 	const port = "8080"
@@ -83,6 +90,7 @@ func main() {
 	mux.HandleFunc("POST /api/login", cfg.handlerLogin)
 	mux.HandleFunc("POST /api/refresh", cfg.handlerRefresh)
 	mux.HandleFunc("POST /api/revoke", cfg.handlerRevoke)
+	mux.HandleFunc("PUT /api/users", cfg.handlerUpdateCredentials)
 
 	server := &http.Server{
 		Addr: ":" + port,
