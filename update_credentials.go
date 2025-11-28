@@ -8,7 +8,7 @@ import (
 	"github.com/Ant-Shell/chirpy/internal/database"
 )
 
-func (cfg *apiConfig) handlerUpdateCredentials(w http.ResponseWriter, r *http.Request ) {
+func (cfg *apiConfig) handlerUpdateCredentials(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 			Email string `json:"email"`
 			Password string `json:"password"`
@@ -53,6 +53,7 @@ func (cfg *apiConfig) handlerUpdateCredentials(w http.ResponseWriter, r *http.Re
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email: user.Email,
+		IsChirpyRed: user.IsChirpyRed,
 	}
 
 	respondWithJSON(w, http.StatusOK, updatedUser)

@@ -26,6 +26,7 @@ type User struct {
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	IsChirpyRed bool `json:"is_chirpy_red"`
 }
 
 type Chirp struct {
@@ -43,6 +44,7 @@ type loginResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	Token string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
+	IsChirpyRed bool `json:"is_chirpy_red"`
 }
 
 type userResponse struct {
@@ -50,6 +52,7 @@ type userResponse struct {
     CreatedAt time.Time `json:"created_at"`
     UpdatedAt time.Time `json:"updated_at"`
     Email     string    `json:"email"`
+		IsChirpyRed bool `json:"is_chirpy_red"`
 }
 
 func main() {
@@ -90,6 +93,7 @@ func main() {
 	mux.HandleFunc("POST /api/login", cfg.handlerLogin)
 	mux.HandleFunc("POST /api/refresh", cfg.handlerRefresh)
 	mux.HandleFunc("POST /api/revoke", cfg.handlerRevoke)
+	mux.HandleFunc("POST /api/polka/webhooks", cfg.handlerUpgradeChirpyRed)
 	mux.HandleFunc("PUT /api/users", cfg.handlerUpdateCredentials)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", cfg.handlerDeleteChirp)
 
