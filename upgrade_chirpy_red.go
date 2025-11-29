@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/Ant-Shell/chirpy/internal/auth"
 )
 
 func (cfg *apiConfig) handlerUpgradeChirpyRed(w http.ResponseWriter, r *http.Request) {
@@ -15,6 +16,15 @@ func (cfg *apiConfig) handlerUpgradeChirpyRed(w http.ResponseWriter, r *http.Req
 		Data struct {
 			UserID string `json:"user_id"`
 		} `json:"data"`
+	}
+
+	key, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "an API key is required", err)
+	}
+
+	if key != cfg.polkaKey {
+		respondWithError(w, http.StatusUnauthorized, "invalid API key", nil)
 	}
 
 	var params parameters
