@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/google/uuid"
 )
@@ -26,23 +27,32 @@ func (cfg *apiConfig) handlerGetAllChirps(w http.ResponseWriter, r *http.Request
 	}
 
 	authorIDString := r.URL.Query().Get("author_id")
-	if authorIDString == "" {
-		respondWithJSON(w, http.StatusOK, chirpList)
-		return
-	}
-
-	parsedID, err := uuid.Parse(authorIDString)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "invalid author_id", err)
-		return
-	}
-
-	targetedChirpList := []Chirp{}
-	for _, targetedChirp := range chirpList {
-		if targetedChirp.UserID == parsedID {
-			targetedChirpList = append(targetedChirpList, targetedChirp)
+	if authorIDString != "" {
+		parsedID, err := uuid.Parse(authorIDString)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "invalid author_id", err)
+			return
 		}
+
+		targetedChirpList := []Chirp{}
+		for _, targetedChirp := range chirpList {
+			if targetedChirp.UserID == parsedID {
+				targetedChirpList = append(targetedChirpList, targetedChirp)
+			}
+		}
+		chirpList = targetedChirpList
 	}
 
-	respondWithJSON(w, http.StatusOK, targetedChirpList)
+	sort_order := r.URL.Query().Get("sort")
+	if sort_order == "desc" {
+		sort.Slice(chirpList, func(i, j int) bool {
+			return chirpList[i].CreatedAt.After(chirpList[j].CreatedAt)
+		})
+	} else {
+		sort.Slice(chirpList, func(i, j int) bool {
+			return chirpList[i].CreatedAt.Before(chirpList[j].CreatedAt)
+		})
+	}
+
+	respondWithJSON(w, http.StatusOK, chirpList)
 }
