@@ -54,78 +54,115 @@ Option 2: go build -o out && ./out
 **Description**: Returns a page with status page 200 if the app is running
 
 #### **Route:** `/api/chirps`
-**Description**: Get all chirps that are currently in the database
+**Description**: Get all chirps that are currently in the database. Returns status code 200 upon success.
 
 #### **Route:** `/api/chirps/{chirpID}`
-**Description**: Get a single chirp by its ID
+**Description**: Get a single chirp by its ID. Returns status code 200 upon success.
 
 #### **Route:** `/api/chirps?author_id=${userID}`
-**Description**: Get all chirps by author
+**Description**: Get all chirps by author. Returns status code 200 upon success.
 
 #### **Route:** `/api/chirps?sort=asc`
-**Description**: Get all chirps in ascending order
+**Description**: Get all chirps in ascending order. Returns status code 200 upon success.
 
 #### **Route:** `/api/chirps?sort=desc`
-**Description**: Get all chirps in descending order
+**Description**: Get all chirps in descending order. Returns status code 200 upon success.
 
 ### ## POST:
 #### **Route:** `/admin/reset`
-**Description**: Delete all users from the database and reset number of times Chirpy has been visited
+**Description**: Delete all users from the database and reset number of times Chirpy has been visited. Returns status code 200 upon success.
 
 #### **Route:** `/api/chirps`
-**Description**: Creates a new chirp for authenticated user
+**Description**: Creates a new chirp for an authenticated user. Returns status code 201 upon success.
 
-**Body**:
+**Header:**
 ```
-TBD
+Authorization: Bearer Token ${userAccessToken}
+```
+
+**Request Body**:
+```
+{
+  "body": "This is a test chirp."
+}
 ```
 
 #### **Route:** `/api/users`
-**Description**: Creates new user
+**Description**: Creates new user. Returns status code 201 upon success.
 
-**Body**:
+**Request Body**:
 ```
-TBD
+{
+  "email": "test@test.com"
+}
 ```
 
 #### **Route:** `/api/login`
-**Description**: Logs in a valid user
+**Description**: Logs in a valid user. Returns user details and status code 200 upon success.
 
-**Body**:
+**Request Body**:
 ```
-TBD
+{
+  "email": "test@test.com",
+  "password": "123456"
+}
 ```
 
 #### **Route:** `/api/refresh`
-**Description**: Refreshes access token for a user
+**Description**: Refreshes access token for a user. Returns status code 200 upon success.
+
+**Header:**
+```
+Authorization: Bearer Token ${userRefreshToken}
+```
 
 
 #### **Route:** `/api/revoke`
-**Description**: Revoked access token for a user
+**Description**: Revoke access token for a user. Returns status code 201 upon success.
+
+**Header:**
+```
+Authorization: Bearer Token ${userRefreshToken}
+```
+
 
 #### **Route:** `/api/polka/webhooks`
-**Description**: Webhook for mock payment processor - grants access to premium Chirpy Red Membership
+**Description**: Webhook for mock payment processor - grants access to premium Chirpy Red Membership. Returns status code 204 upon success.
 
-**Body**:
+**Request Body**:
 ```
-TBD
+{
+  "data": {
+    "user_id": "${userID}"
+  },
+  "event": "user.upgraded"
+}
 ```
 
 ### ## PUT:
 #### **Route:** `/api/users`
-**Description**: Updates credentials (username and password) for a user
+**Description**: Updates credentials (username and password) for a user. Returns status code 200 upon success.
 
-**Body**:
+**Header:**
 ```
-TBD
+Authorization: Bearer Token ${userAccessToken}
+```
+
+**Request Body**:
+```
+{
+  "email": "test@test.com",
+  "password": "updatedpassword"
+}
 ```
 
 ### ## DELETE:
 #### **Route:** `/api/chirps/{chirpID}`
-**Description**: Deletes a chirp for a user
+**Description**: Deletes a chirp for a user. Returns status code 204 upon success.
 
-**Body**:
+**Header:**
 ```
-TBD
+Authorization: Bearer Token ${userAccessToken}
 ```
+
 
